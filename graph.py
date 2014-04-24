@@ -81,18 +81,18 @@ class graph():
 
         norm = self.nv*(self.nv - 1) - 2 * self.ne
         if norm:
-            choice_dict = dict([(i, (self.nv - self.degs[i] - 1) / norm) 
-                                for i in self.ve_dict]) 
-            i = weighted_choice(choice_dict) 
-            j = random.choice(
+            choice_dict = dict([(v, (self.nv - self.degs[v] - 1) / norm) 
+                                for v in self.ve_dict]) 
+            v = weighted_choice(choice_dict) 
+            w = random.choice(
                     [e for e in self.ve_dict if 
-                     e != i  and 
-                     e not in self.ve_dict[i]])
-            self.ve_dict[i].add(j)
-            self.ve_dict[j].add(i)
+                     e != v  and 
+                     e not in self.ve_dict[v]])
+            self.ve_dict[v].add(w)
+            self.ve_dict[w].add(v)
             self.ne += 1
-            self.degs[i] += 1
-            self.degs[j] += 1
+            self.degs[v] += 1
+            self.degs[w] += 1
         else:
             print('error: graph complete, no more edges to add')
 
@@ -173,16 +173,15 @@ def connected_components(G):
     this_comp = []
     
     def explore(v):
+        this_comp.append(v)
         visited[v] = True
         for w in G[v]:
             if not visited[w]:
-                this_comp.append(w)
                 explore(w)
         return
 
     for v in G:
         if not visited[v]:
-            this_comp.append(v)
             explore(v)
             comps.append(G.subgraph(this_comp))
             this_comp = []
@@ -190,9 +189,10 @@ def connected_components(G):
             
 
 if __name__ == '__main__':
-    G = graph(range(10))
-    for i in range(20):
+    G = graph(range(6))
+    for i in range(3):
         G.add_rand_edge()
-    
-    G_tree = spanning_forest(G)
-    print(G_tree)
+    print(G)
+    for i in connected_components(G):
+        print(i)
+

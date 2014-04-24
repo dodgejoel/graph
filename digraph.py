@@ -8,9 +8,6 @@ def weighted_choice(weight_dict):
     weight_dict.values() should sum to 1.
     '''
 
-    if sum(weight_dict.values()) != 1:
-        print('error: dict_values should sum to 1.')
-        return False
     cutoff = random.random()
     threshold = 0
     for choice in weight_dict:
@@ -65,14 +62,6 @@ class digraph():
         else:
             return False
 
-    def subgraph(self, some_verts):
-        '''Return the subgraph of G on the vertices in some_verts.'''
-        
-        some_edges = dict(
-                [(v, set([e for e in self.ve_dict[v] if e in some_verts]))
-                    for v in some_verts])
-        return graph(some_verts, some_edges)
-
     def add_rand_edge(self):
         '''
         use the weighted choice function to choose a vertex to add an edge to
@@ -92,6 +81,21 @@ class digraph():
             self.add_edge(v, w)
         else:
             print('error: graph complete, no more edges to add')
+
+    def subgraph(self, some_verts):
+        '''Return the subgraph of G on the vertices in some_verts.'''
+        
+        some_edges = dict(
+                [(v, set([e for e in self.ve_dict[v] if e in some_verts]))
+                    for v in some_verts])
+        return digraph(some_verts, some_edges)
+
+    def excise(self, cut_verts):
+        '''Return the subgraph of G on the vertices that are NOT in
+        cut_verts.'''
+
+        keep_verts = set([v for v in self.ve_dict if v not in cut_verts])
+        return self.subgraph(keep_verts)
 
     def is_complete(self):
         if self.ne == self.nv * (self.nv - 1):
@@ -123,11 +127,37 @@ class digraph():
                 mat[i, j] = 1
         return mat
 
+def strongly_connected_components(G):
+
+    visited = dict([(v, False) for v in G])
+    sc_comps = []
+    this_comp = []
+
+    def explore(v):
+        this_comp.append(v)
+        visited[v] = True
+        for w in G[v]:
+            if not visited[w]:
+                explore(w)
+        return
+    
+    post_ordered = dfs(G.reverse())[1]
+    post_ordered.reverse()
+
+    for v in post_ordered:
+        if not visited[v]:
+            explore(v)
+            sc_comps.append(G.subgraph(this_comp))
+            this_comp = []
+    return sc_comps
+
 def dfs(G):
     '''
     Depth first search through vertices of G.
     Returns a dict whose pairs are of the form 
         (vertex, [first time visited, last time left]).  
+    and a list whose vertices are sorted according to the order they were last
+        visited.  last vertex left is at the end.
     I do not understand why I have to pass counter as a paramter to explore
         below in order to access it but I do not have to pass visited as a
         parameter.
@@ -135,6 +165,7 @@ def dfs(G):
 
     visited = dict([(v, False) for v in G])
     pre_post = dict([(v, []) for v in G])
+    leave_order = []
     counter = 0
     
     def explore(v, counter):
@@ -145,19 +176,23 @@ def dfs(G):
             if not visited[u]:
                 counter = explore(u, counter)
         pre_post[v].append(counter)
+        leave_order.append(v)
         counter += 1
         return counter
 
     for v in G:
         if not visited[v]:
             counter = explore(v, counter)
-    return pre_post 
+    return pre_post, leave_order
 
 if __name__ == '__main__':
     G = digraph(range(6))
-    for i in range(6):
+    for i in range(10):
         G.add_rand_edge()
-    
+
     print(G)
-    Gprime = G.reverse()
-    print(Gprime)
+
+    S = strongly_connected_components(G)
+    for i in S:
+        print(i)
+
