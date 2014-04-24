@@ -19,7 +19,7 @@ def weighted_choice(weight_dict):
 
 class graph():
     '''
-    Class is called with a sequence parameter which is the colection of vertex labels.
+    Class is called with a sequence parameter which is the collection of vertex labels.
     There is an optional parameter of a dict whose values should be subsets of
         the set of vertices.
     Things are implemented so that iterating over an instance iterates over the vertices.
@@ -43,6 +43,10 @@ class graph():
 
     def __len__(self):
         return self.nv
+
+    def __repr__(self):
+        '''What is a nice string representation for a graph?'''
+        return self.ve_dict.__repr__()
 
     def add_edge(self, i, j):
         if i in self.ve_dict and j in self.ve_dict:
@@ -110,69 +114,85 @@ class graph():
                 mat[i, j] = 1
         return mat
 
-    
-def sf_explore(G, v, visited, sf):
-    '''Utility explore function used in the constructio of a spanning forest below.'''
-    visited[v] = True
-    for u in G[v]:
-        if not visited[u]:
-            sf.add_edge(u, v)
-            sf_explore(G, u, visited, sf)
-
 def spanning_forest(G):
-    '''Perform a dfs and returns a spanning forest of G.'''
+    '''Perform a depth-first search and return a spanning forest of G.'''
 
     visited = dict([(v, False) for v in G])
     sp_forest = graph(G)
+
+    def explore(v):
+        visited[v] = True
+        for u in G[v]:
+            if not visited[u]:
+                sp_forest.add_edge(u, v)
+                explore(u)
+        return 
+
     for v in G:
         if not visited[v]:
-            sf_explore(G, v, visited, sp_forest)
+            explore(v)
     return sp_forest
 
-def explore(G, v, visited, pre_post, count):
-
-    visited[v] = True
-    pre_post[v].append(count)
-    count += 1
-
-    for u in G[v]:
-        if not visited[u]:
-            count = explore(G, u, visited, pre_post, count)
-    pre_post[v].append(count)
-    count += 1
-    return count
-
-def dfs(G, visited = []):
+def dfs(G):
     '''
     Depth first search through vertices of G.
-    Returns the number of connected components of G.
+    Returns a dict whose pairs are of the form 
+        (vertex, [first time visited, last time left]).  
+    I do not understand why I have to pass counter as a paramter to explore
+        below in order to access it but I do not have to pass visited as a
+        parameter.
     '''
 
     visited = dict([(v, False) for v in G])
     pre_post = dict([(v, []) for v in G])
-    count = 0
+    counter = 0
+    
+    def explore(v, counter):
+        visited[v] = True
+        pre_post[v].append(counter)
+        counter += 1
+        for u in G[v]:
+            if not visited[u]:
+                counter = explore(u, counter)
+        pre_post[v].append(counter)
+        counter += 1
+        return counter
 
     for v in G:
         if not visited[v]:
-            count = explore(G, v, visited, pre_post, count)
+            counter = explore(v, counter)
     return pre_post 
 
 def connected_components(G):
     '''
-    Would like to take the pre_post data and return a list of the connected
-    components of G.
-    Seems ridiculous to not just do this during the depth first search.
-    Can easily collect components inside the loop in dfs above.  
+    Perform depth first search on G and return a list of graphs which are the
+    connected components of G.
     '''
-    pass      
+    visited = dict([(v, False) for v in G])
+    comps = []
+    this_comp = []
+    
+    def explore(v):
+        visited[v] = True
+        for w in G[v]:
+            if not visited[w]:
+                this_comp.append(w)
+                explore(w)
+        return
 
+    for v in G:
+        if not visited[v]:
+            this_comp.append(v)
+            explore(v)
+            comps.append(G.subgraph(this_comp))
+            this_comp = []
+    return comps
+            
 
 if __name__ == '__main__':
-    G = graph(range(2500))
-    for i in range(1000):
+    G = graph(range(10))
+    for i in range(20):
         G.add_rand_edge()
-
-    stack = dfs(G)
-    print(stack)
-
-
+    
+    G_tree = spanning_forest(G)
+    print(G_tree)
